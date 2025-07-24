@@ -56,7 +56,7 @@
 #' saved as an integer. If `ret!="GRanges`, returns a data.frame.
 #'
 #' @importFrom BiocParallel bplapply SerialParam bpnworkers
-#' @importFrom GenomeInfoDb seqlevels
+#' @importFrom Seqinfo seqlevels
 #' @import GenomicRanges
 #' @importFrom Biostrings DNAString RNAString DNAStringSet subseq complement
 #'             reverseComplement extractAt xscat padAndClip consensusMatrix
