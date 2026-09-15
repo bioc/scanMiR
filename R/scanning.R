@@ -610,7 +610,8 @@ removeOverlappingRanges <- function(x, minDist=7L, retIndices=FALSE,
     if(is.null(names(seeds)))
       stop("If `seeds` is a list of KdModels, it should be named.")
   }else{
-    if(is.null(names(seeds))) n <- names(seeds) <- seeds
+    if(is.null(names(seeds))) names(seeds) <- seeds
+    n <- names(seeds)
     seeds <- gsub("U", "T", seeds)
     names(seeds) <- n
     ret$seeds <- seeds
@@ -671,7 +672,7 @@ getMatchTypes <- function(x, seed, checkWobble=TRUE){
     y[.isWobble(x,seed,FALSE)] <- 9L # wobbled 8-mer
   }
   y[grep(paste0("[ACGTN]",substr(seed,2,8)),x)] <- 10L # 7mer-a1
-  y[grep(substr(seed,1,7),x,fixed=TRUE)] <- 11L # 7mer-m8
+  y[substr(x, 1, 7) == substr(seed, 1, 7)] <- 11L # 7mer-m8
   y[grep(seed,x,fixed=TRUE)] <- 12L # 8mer
   factor(y, levels=12L:1L, labels=.matchLevels())
 }
