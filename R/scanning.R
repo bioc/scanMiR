@@ -672,7 +672,7 @@ getMatchTypes <- function(x, seed, checkWobble=TRUE){
     y[.isWobble(x,seed,FALSE)] <- 9L # wobbled 8-mer
   }
   y[grep(paste0("[ACGTN]",substr(seed,2,8)),x)] <- 10L # 7mer-a1
-  y[substr(x, 1, 7) == substr(seed, 1, 7)] <- 11L # 7mer-m8
+  y[substr(x, 2, 8) == substr(seed, 1, 7)] <- 11L # 7mer-m8
   y[grep(seed,x,fixed=TRUE)] <- 12L # 8mer
   factor(y, levels=12L:1L, labels=.matchLevels())
 }
