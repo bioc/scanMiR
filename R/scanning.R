@@ -95,7 +95,7 @@ findSeedMatches <- function( seqs, seeds, shadow=0L, onlyCanonical=FALSE,
     orf.length <- 0L
     tx_info$ORF.length <- orf.length
     mcols(seqs)$ORF.length <- orf.length
-    mcols(seqs)$C.length <- orf.length
+    mcols(seqs)$C.length <- shadow
   }else{
     hasORF <- TRUE
     orf.length <- tx_info$ORF.length
@@ -148,7 +148,7 @@ findSeedMatches <- function( seqs, seeds, shadow=0L, onlyCanonical=FALSE,
     m <- .find1SeedMatches(seqs, seeds, keepMatchSeq=keepMatchSeq,
                            minDist=minDist, maxLogKd=maxLogKd,
                            onlyCanonical=onlyCanonical, p3.extra=p3.extra,
-                           p3.params=p3.params, offset=offset,
+                           p3.params=p3.params, offset=offset, hasORF=hasORF,
                            verbose=verbose, ret=ret)
     if(length(m)==0) return(m)
     if(ret=="aggregated"){
@@ -194,7 +194,8 @@ findSeedMatches <- function( seqs, seeds, shadow=0L, onlyCanonical=FALSE,
                                keepMatchSeq=keepMatchSeq, minDist=minDist,
                                maxLogKd=maxLogKd, p3.extra=p3.extra,
                                onlyCanonical=onlyCanonical, p3.params=p3.params,
-                               ret=ret, offset=offset, verbose=verbose)
+                               ret=ret, offset=offset, hasORF=hasORF,
+                               verbose=verbose)
         if(ret=="aggregated"){
           if(verbose) message("Aggregating...")
           if(length(m)==0) return(data.frame())
@@ -266,7 +267,7 @@ findSeedMatches <- function( seqs, seeds, shadow=0L, onlyCanonical=FALSE,
 # scan for a single seed
 .find1SeedMatches <- function(seqs, seed, keepMatchSeq=FALSE, maxLogKd=-1,
                               minDist=1L, onlyCanonical=FALSE, p3.extra=FALSE,
-                              p3.params=list(), offset=0L,
+                              p3.params=list(), offset=0L, hasORF=FALSE,
                               ret=c("GRanges","data.frame","aggregated"),
                               verbose=FALSE){
   ret <- match.arg(ret)
@@ -383,13 +384,18 @@ findSeedMatches <- function( seqs, seeds, shadow=0L, onlyCanonical=FALSE,
     rm(ms)
     mcols(m)$note <- Rle(mcols(m)$note)
   }
-  if(!is.null(mcols(seqs)$C.length) && !all(mcols(seqs)$ORF.length == 0)) {
-    mcols(m)$ORF <-
+  if(!is.null(mcols(seqs)$C.length) && !all(mcols(seqs)$C.length == 0)){
+    inShadowOrORF <-
       start(m) <= mcols(seqs[seqlevels(m)])[as.integer(seqnames(m)),"C.length"]
-    if(!isPureSeed && maxLogKd[2]!=Inf && maxLogKd[2]!=maxLogKd[1]){
-      m <- m[which(!m$ORF | m$log_kd <= as.integer(round(maxLogKd[2])))]
+    if(hasORF){
+      mcols(m)$ORF <- inShadowOrORF
+      if(!isPureSeed && maxLogKd[2]!=Inf && maxLogKd[2]!=maxLogKd[1]){
+        m <- m[which(!m$ORF | m$log_kd <= as.integer(round(maxLogKd[2])))]
+      }
+      mcols(m)$ORF <- Rle(mcols(m)$ORF)
+    } else {
+      m <- m[!inShadowOrORF]
     }
-    mcols(m)$ORF <- Rle(mcols(m)$ORF)
   }
   names(m) <- NULL
   if(offset!=0) m <- IRanges::shift(m, -offset)
@@ -622,13 +628,11 @@ removeOverlappingRanges <- function(x, minDist=7L, retIndices=FALSE,
   shadow <- max(c(0,shadow-1))
   ret$offset <- max(c(0,pad[1]-max(0,shadow)))
   seqs <- seqs[lengths(seqs)>=(shadow+8)]
-  seqs <- subseq(seqs,1+shadow,lengths(seqs))
-  seqs <- padAndClip(seqs, views=IRanges(start=1-shadow-ret$offset,
-                                         width=lengths(seqs)+
-                                           shadow+ret$offset+pad[2]),
+  seqs <- padAndClip(seqs, views=IRanges(start=1-ret$offset,
+                                         width=lengths(seqs)+ret$offset+pad[2]),
                      Lpadding.letter = "N", Rpadding.letter = "N")
   if(!is.null(mcols(seqs)$C.length))
-    mcols(seqs)$C.length <- mcols(seqs)$C.length + ret$offset + shadow
+    mcols(seqs)$C.length <- mcols(seqs)$C.length + ret$offset  
   c(ret, list(seqs=seqs))
 }
 
